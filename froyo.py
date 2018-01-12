@@ -1,27 +1,80 @@
 import sys
 import os
 import shutil
+import time 
 from PIL import Image
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
-def process(source, dest):
-    cwd = os.getcwd()
+source_global = ''
+dest_global = ''
 
-    source = os.path.join(cwd, source)
+debug = False
+print_original = print
+def print_new(*stuff, sep=' ', end='\n', file=sys.stdout, flush=False):
+    if debug:
+        print_original(*stuff, sep=sep, end=end, file=file, flush=flush)
+print = print_new
 
-    assert os.path.isdir(source)
+class DirectoryUpdate(FileSystemEventHandler):
+    def on_any_event(thing, event):
+        print(event.event_type)
+        if event.event_type == 'deleted':
+            print(event, dest_global)
+            file = event.src_path[event.src_path.index(os.sep)+1:]
+            if event.is_directory:
+                try:
+                    shutil.rmtree(os.path.join(dest_global,file))
+                except Exception as e:
+                    print(e)
+            else:
+                try:
+                    os.remove(os.path.join(dest_global,file))
+                except Exception as e:
+                    print(e)
+        else:
+            try:
+                process(source_global, dest_global)
+            except Exception as e:
+                print(e)
 
-    if not dest:
-        #create destination
-        pass
-    else:
-        dest = os.path.join(cwd, dest)
-        assert os.path.isdir(dest) 
+
+def process(source, dest, filetype='all'):
+
+    html = True
+    css = True
+    js = True
+    images = True
+    other = True
+
+    if filetype == 'html':
+        css = False
+        js = False
+        images = False
+        other = False
+
+    if filetype == 'js':
+        html = False
+        css = False
+        images = False
+        other = False
+
+    if filetype == 'css':
+        html = False
+        js = False
+        images = False
+        other = False
+
+    if filetype == 'images':
+        html = False
+        css = False
+        js = False
+        other = False       
 
     for subdirs, dirs, files in os.walk(source):
         files = [f for f in files if not f[0] == '.']
         dirs[:] = [d for d in dirs if not d[0] == '.']
         for file in files:
-            print(file)
             filepath = os.path.join(subdirs, file)
             if file.endswith('html'):
                 process_html(filepath, source, dest)
@@ -34,6 +87,7 @@ def process(source, dest):
             elif not file.startswith('.'):
                 cp_dest = os.path.join(dest, filepath[len(source)+1:])
                 copy_file(filepath, cp_dest)
+    print("done")
 
 def process_html(filepath, source, dest):
     with open(filepath, 'r+', encoding="utf-8") as file:
@@ -88,7 +142,6 @@ def save_file(file, path):
     with open(path, 'w+', encoding='utf-8') as dest_file:
         dest_file.write(file)
 
-
 if __name__ == '__main__':
     assert len(sys.argv) > 1
     source = sys.argv[1]
@@ -97,4 +150,27 @@ if __name__ == '__main__':
     else:
         dest = None
 
-    process(source, dest)
+    cwd = os.getcwd()
+
+    source_global = os.path.join(cwd, source)
+
+    assert os.path.isdir(source)
+
+    if not dest:
+        #create destination
+        pass
+    else:
+        dest_global = os.path.join(cwd, dest)
+        assert os.path.isdir(dest) 
+
+    event_handler = DirectoryUpdate()
+
+    observer = Observer()
+    observer.schedule(event_handler, source, recursive=True)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
