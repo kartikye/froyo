@@ -11,14 +11,15 @@ dest_global = ''
 
 debug = False
 print_original = print
-def print_new(*stuff, sep=' ', end='\n', file=sys.stdout, flush=False):
-    if debug:
+def print_new(*stuff, sep=' ', end='\n', file=sys.stdout, flush=False, override=False):
+    if debug or override:
         print_original(*stuff, sep=sep, end=end, file=file, flush=flush)
 print = print_new
 
 class DirectoryUpdate(FileSystemEventHandler):
     def on_any_event(thing, event):
         print(event.event_type)
+        print("working:", event.src_path, override=True)
         if event.event_type == 'deleted':
             print(event, dest_global)
             file = event.src_path[event.src_path.index(os.sep)+1:]
@@ -142,8 +143,12 @@ def save_file(file, path):
     with open(path, 'w+', encoding='utf-8') as dest_file:
         dest_file.write(file)
 
-if __name__ == '__main__':
-    assert len(sys.argv) > 1
+def main():
+    print("froyo is starting", override=True)
+    global source_global, dest_global
+    if len(sys.argv) < 3:
+        print("please run the following: froyo <SOURCE DIR> <DEST DIR>", override=True)
+        exit()
     source = sys.argv[1]
     if len(sys.argv) > 2:
         dest = sys.argv[2]
@@ -154,14 +159,15 @@ if __name__ == '__main__':
 
     source_global = os.path.join(cwd, source)
 
-    assert os.path.isdir(source)
+    if not os.path.isdir(source_global):
+        print('source dir does not exist', override=True)
+        exit()
 
-    if not dest:
-        #create destination
-        pass
-    else:
-        dest_global = os.path.join(cwd, dest)
-        assert os.path.isdir(dest) 
+    dest_global = os.path.join(cwd, dest)
+    
+    if not os.path.isdir(dest_global):    
+        print('dest dir does not exist', override=True)
+        exit()
 
     event_handler = DirectoryUpdate()
 

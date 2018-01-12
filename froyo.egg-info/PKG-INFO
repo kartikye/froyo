@@ -1,0 +1,39 @@
+Metadata-Version: 1.1
+Name: froyo
+Version: 0.1.0
+Summary: Command line tool that prepares a static website for distribution, processing server side includes locally.
+Home-page: https://github.com/kartikye/froyo
+Author: Kartikye Mittal
+Author-email: kartikye.mittal+froyo@gmail.com
+License: UNKNOWN
+Description: froyo
+        =====
+        
+        a python script to process server side include locally and produce
+        static files
+        
+        install with:
+        
+        ``python setup.py install``
+        
+        run with:
+        
+        ``froyo <path\to\source\dircetory> <path\to\dest\directory>``
+        
+        what will the script do?
+        
+        -  minify html, js and css files
+        -  compress images
+        -  ignore hidden files
+        
+        
+Keywords: html css js server side includes website development
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Build Tools
+Classifier: License :: OSI Approved :: FreeBSD License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
