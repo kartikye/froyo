@@ -3,6 +3,7 @@ import os
 import shutil
 import time 
 from PIL import Image
+from css_html_js_minify import html_minify, js_minify, css_minify
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -79,12 +80,6 @@ def process(source, dest, filetype='all'):
             filepath = os.path.join(subdirs, file)
             if file.endswith('html'):
                 process_html(filepath, source, dest)
-            elif file.endswith('.css'):
-                process_css(filepath, source, dest)
-            elif file.endswith('.js'):
-                process_js(filepath, source, dest)
-            elif file.endswith('.png') or file.endswith('.jpg') or file.endswith('.jpeg') or file.endswith('.JPG') or file.endswith('JPEG'):
-                process_image(filepath, source, dest) 
             elif not file.startswith('.'):
                 cp_dest = os.path.join(dest, filepath[len(source)+1:])
                 copy_file(filepath, cp_dest)
@@ -105,21 +100,21 @@ def process_html(filepath, source, dest):
                 lines = lines[0: line] + change + lines[line+1:]
         
         dest = os.path.join(dest, filepath[len(source)+1:])
-        new_file = minify_file(lines)
+        new_file = html_minify(''.join(lines))
         save_file(new_file, dest)
 
 def process_css(filepath, source, dest):
     with open(filepath, 'r+', encoding='utf-8') as css:
         lines = css.readlines()
         dest = os.path.join(dest, filepath[len(source)+1:])
-        new_file = minify_file(lines, True)
+        new_file = css_minify(''.join(lines))
         save_file(new_file, dest)
 
 def process_js(filepath, source, dest):
     with open(filepath, 'r+', encoding='utf-8') as js:
         lines = js.readlines()
         dest = os.path.join(dest, filepath[len(source)+1:])
-        new_file = minify_file(lines)
+        new_file = js_minify(''.join(lines))
         save_file(new_file, dest)
 
 def process_image(filepath, source, dest):
@@ -127,12 +122,6 @@ def process_image(filepath, source, dest):
     dest = os.path.join(dest, filepath[len(source)+1:])
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     image.save(dest, optimize=True, quality=90)
-
-def minify_file(file, remove_spaces=False):
-    file = ''.join(file).replace('\t','').replace('\n', '') 
-    if remove_spaces:
-        file = file.replace(' ', '')
-    return file
 
 def copy_file(file, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -168,6 +157,8 @@ def main():
     if not os.path.isdir(dest_global):    
         print('dest dir does not exist', override=True)
         exit()
+
+    process(source_global, dest_global)
 
     event_handler = DirectoryUpdate()
 
