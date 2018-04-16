@@ -10,11 +10,11 @@ install with:
 
 run with:
 
-``froyo <path\to\source\dircetory> <path\to\dest\directory>``
+``froyo <path\to\source\dircetory> [--dest <path\to\dest\directory>] [--watch]``
 
 what will the script do?
 
--  minify html, js and css files
+-  minify html and css files
 -  compress images
--  ignore hidden files
+-  ignore hidden files, sass and photoshop files
 
