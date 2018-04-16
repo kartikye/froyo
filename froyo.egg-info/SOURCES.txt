@@ -8,4 +8,5 @@ froyo.egg-info/PKG-INFO
 froyo.egg-info/SOURCES.txt
 froyo.egg-info/dependency_links.txt
 froyo.egg-info/entry_points.txt
+froyo.egg-info/requires.txt
 froyo.egg-info/top_level.txt
