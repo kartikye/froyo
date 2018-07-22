@@ -12,6 +12,9 @@ run with:
 
 ``froyo <path\to\source\dircetory> [--dest <path\to\dest\directory>] [--watch]``
 
+froyo now supports config file that ease setting and running
+
+
 what will the script do?
 
 -  minify html and css files

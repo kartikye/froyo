@@ -7,6 +7,7 @@ from css_html_js_minify import html_minify, js_minify, css_minify
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import argparse
+import configparser
 
 source_global = ''
 dest_global = ''
@@ -42,37 +43,7 @@ class DirectoryUpdate(FileSystemEventHandler):
                 print(e)
 
 
-def process(source, dest, filetype='all'):
-
-    html = True
-    css = True
-    js = True
-    images = True
-    other = True
-
-    if filetype == 'html':
-        css = False
-        js = False
-        images = False
-        other = False
-
-    if filetype == 'js':
-        html = False
-        css = False
-        images = False
-        other = False
-
-    if filetype == 'css':
-        html = False
-        js = False
-        images = False
-        other = False
-
-    if filetype == 'images':
-        html = False
-        css = False
-        js = False
-        other = False       
+def process(source, dest, config):
 
     for subdirs, dirs, files in os.walk(source):
         files = [f for f in files if not f[0] == '.']
@@ -80,11 +51,13 @@ def process(source, dest, filetype='all'):
         for file in files:
             filepath = os.path.join(subdirs, file)
             if file.endswith('.html'):
-                process_html(filepath, source, dest)
+                process_html(filepath, source, dest, config)
             elif file.endswith('.css') and not file.endswith('.scss'):
-                process_css(filepath, source, dest)
+                process_css(filepath, source, dest, config)
+            elif file.endswith('.js'):
+                process_js(filepath, source, dest, config)
             elif file.endswith(('.jpg', '.png', '.gif', '.bmp', '.tiff', '.jpeg')):
-                process_image(filepath, source, dest)
+                process_image(filepath, source, dest, config)
             elif file.startswith('.') or file.endswith(('.scss', '.psd')):
                 pass
             else:
@@ -93,7 +66,7 @@ def process(source, dest, filetype='all'):
                 print(filepath)
     print("done")
 
-def process_html(filepath, source, dest):
+def process_html(filepath, source, dest, config):
     with open(filepath, 'r+', encoding="utf-8") as file:
         changes = []
         lines = file.readlines()
@@ -108,27 +81,45 @@ def process_html(filepath, source, dest):
                 lines = lines[0: line] + change + lines[line+1:]
         
         dest = os.path.join(dest, filepath[len(source)+1:])
-        new_file = html_minify(''.join(lines))
+
+        new_file = '\n'.join(lines)
+        if config['MINIFY']['html'] == 'True':
+            new_file = html_minify(new_file)
         save_file(new_file, dest)
 
-def process_css(filepath, source, dest):
+def process_css(filepath, source, dest, config):
     with open(filepath, 'r+', encoding='utf-8') as css:
         lines = css.readlines()
         dest = os.path.join(dest, filepath[len(source)+1:])
-        new_file = css_minify(''.join(lines))
+        new_file = '\n'.join(lines)
+        if config['MINIFY']['css'] == 'True':
+            new_file = css_minify(new_file)
         save_file(new_file, dest)
 
-def process_js(filepath, source, dest):
+def process_js(filepath, source, dest, config):
     with open(filepath, 'r+', encoding='utf-8') as js:
         lines = js.readlines()
         dest = os.path.join(dest, filepath[len(source)+1:])
-        new_file = js_minify(''.join(lines))
+        new_file = '\n'.join(lines)
+        if config['MINIFY']['js'] == 'True':
+            new_file = js_minify(new_file)
         save_file(new_file, dest)
 
-def process_image(filepath, source, dest):
+def process_image(filepath, source, dest, config):
     image = Image.open(filepath)
     dest = os.path.join(dest, filepath[len(source)+1:])
     os.makedirs(os.path.dirname(dest), exist_ok=True)
+    if 'max_width' or 'max_height' in config['IMAGE']:
+        if 'max_width' in config['IMAGE']:
+            max_width = int(config['IMAGE']['max_width'])
+        else:
+            max_width = 10000
+        if 'max_height' in config['IMAGE']:
+            max_height = int(config['IMAGE']['max_height'])
+        else:
+            max_height = 10000
+        image.thumbnail((max_width, max_height), Image.ANTIALIAS)
+
     image.save(dest, optimize=True, quality=80)
 
 def copy_file(file, path):
@@ -167,7 +158,7 @@ def main():
 
     cwd = os.getcwd()
 
-    global source_global, dest_global
+    global source_global, dest_global, config
 
     source_global = os.path.join(cwd, source)
 
@@ -175,12 +166,22 @@ def main():
         print('source dir does not exist', override=True)
         exit()
 
-    dest_global = os.path.join(cwd, dest)
+    config = False
+
+    if os.path.isfile(source_global+'/froyo.ini'):
+        config = configparser.ConfigParser()
+        config.read(source_global+'/froyo.ini')
+
+    if config:
+        if 'destination' in config['SETTINGS']:
+            dest_global = os.path.join(source_global, config['SETTINGS']['destination'])
+    else:
+        dest_global = os.path.join(cwd, dest)
     
     if not os.path.isdir(dest_global):    
         os.makedirs(dest_global)
 
-    process(source_global, dest_global)
+    process(source_global, dest_global, config)
 
     if args.watch:
         event_handler = DirectoryUpdate()
